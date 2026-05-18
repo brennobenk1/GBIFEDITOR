@@ -1,0 +1,1079 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GBIF Darwin Core Builder</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;0,9..144,700;1,9..144,400&family=IBM+Plex+Mono:wght@400;500&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:       #080f0a;
+  --surf:     #0f1b12;
+  --surf2:    #162019;
+  --surf3:    #1d2b20;
+  --border:   #2a4a32;
+  --accent:   #52a96d;
+  --acl:      #9dd4ae;
+  --gold:     #d4b84a;
+  --goldd:    #a8922d;
+  --text:     #e2f0e6;
+  --textd:    #7aa488;
+  --danger:   #d95b5b;
+  --ff-d:  'Fraunces', Georgia, serif;
+  --ff-m:  'IBM Plex Mono', monospace;
+  --ff-b:  'Outfit', sans-serif;
+  --r:  6px;
+  --rl: 10px;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--ff-b);
+  font-size: 14px;
+  line-height: 1.5;
+  min-height: 100vh;
+}
+
+/* ── HEADER ─────────────────────────────── */
+header {
+  position: relative;
+  padding: 36px 44px 30px;
+  background: linear-gradient(160deg, #080f0a 0%, #0f2218 60%, #0a1a0e 100%);
+  border-bottom: 1px solid var(--border);
+  overflow: hidden;
+}
+header::before {
+  content:'';
+  position:absolute; top:-80px; right:-60px;
+  width:360px; height:360px;
+  background: radial-gradient(circle, rgba(82,169,109,0.12) 0%, transparent 68%);
+  pointer-events:none;
+}
+header::after {
+  content:'';
+  position:absolute; bottom:-40px; left:100px;
+  width:200px; height:200px;
+  background: radial-gradient(circle, rgba(212,184,74,0.06) 0%, transparent 70%);
+  pointer-events:none;
+}
+.header-tag {
+  font-family: var(--ff-m);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 10px;
+  display: flex; align-items: center; gap: 8px;
+}
+.header-tag::before {
+  content: '';
+  display: inline-block;
+  width: 24px; height: 1px;
+  background: var(--accent);
+}
+header h1 {
+  font-family: var(--ff-d);
+  font-size: 2.4rem;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+}
+header h1 em {
+  font-style: italic;
+  color: var(--acl);
+}
+header p {
+  color: var(--textd);
+  font-size: 13px;
+  margin-top: 8px;
+  max-width: 560px;
+}
+
+/* ── CONTAINER ──────────────────────────── */
+.wrap {
+  max-width: 1380px;
+  margin: 0 auto;
+  padding: 28px 44px 60px;
+}
+
+/* ── CARD / SECTION ─────────────────────── */
+.card {
+  background: var(--surf);
+  border: 1px solid var(--border);
+  border-radius: var(--rl);
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+
+.card-hd {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 22px;
+  background: var(--surf2);
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  user-select: none;
+  transition: background .15s;
+}
+.card-hd:hover { background: var(--surf3); }
+
+.step-num {
+  width: 26px; height: 26px;
+  background: var(--accent);
+  color: #fff;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700;
+  flex-shrink: 0;
+}
+
+.card-title {
+  font-weight: 600;
+  font-size: 14px;
+  flex: 1;
+}
+.card-subtitle {
+  font-size: 11px;
+  color: var(--textd);
+  font-family: var(--ff-m);
+}
+
+.toggle-icon {
+  color: var(--textd);
+  font-size: 16px;
+  transition: transform .2s;
+  flex-shrink: 0;
+}
+.card.closed .toggle-icon { transform: rotate(-90deg); }
+.card.closed .card-body { display: none; }
+
+.card-body { padding: 22px; }
+
+/* ── FIELD GRID ─────────────────────────── */
+.fgrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 14px;
+  margin-bottom: 18px;
+}
+.fgrid-label {
+  grid-column: 1 / -1;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--acl);
+  font-weight: 600;
+  padding-bottom: 7px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 2px;
+  font-family: var(--ff-m);
+}
+.fw { grid-column: 1 / -1; }
+.f2 { grid-column: span 2; }
+
+.field { display: flex; flex-direction: column; gap: 5px; }
+
+label.lbl {
+  font-family: var(--ff-m);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--textd);
+  font-weight: 500;
+  display: flex; flex-direction: column; gap: 2px;
+}
+label.lbl .hint {
+  font-family: var(--ff-b);
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 10px;
+  opacity: 0.65;
+  font-weight: 400;
+}
+
+input[type=text], textarea, select {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: var(--r);
+  padding: 9px 11px;
+  font-family: var(--ff-m);
+  font-size: 12px;
+  width: 100%;
+  outline: none;
+  transition: border-color .15s, box-shadow .15s;
+}
+input[type=text]:focus, textarea:focus, select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(82,169,109,0.15);
+}
+textarea { resize: vertical; min-height: 72px; }
+
+/* ── UTM DISPLAY ────────────────────────── */
+.utm-box {
+  background: rgba(82,169,109,0.07);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 9px 11px;
+  font-family: var(--ff-m);
+  font-size: 12px;
+  color: var(--acl);
+  min-height: 38px;
+  display: flex; align-items: center;
+}
+
+/* ── TAXONOMY HINT ──────────────────────── */
+.tax-hint {
+  background: rgba(212,184,74,0.07);
+  border: 1px solid rgba(212,184,74,0.25);
+  border-radius: var(--r);
+  padding: 12px 16px;
+  font-size: 12px;
+  color: #d4c16a;
+  margin-bottom: 14px;
+  line-height: 1.6;
+}
+.tax-hint strong { color: var(--gold); }
+.col-order {
+  font-family: var(--ff-m);
+  font-size: 10px;
+  color: var(--acl);
+  margin-top: 6px;
+  line-height: 1.8;
+  word-break: break-all;
+}
+
+/* ── PER-ROW TABLE ──────────────────────── */
+.pr-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  max-height: 420px;
+  overflow-y: auto;
+}
+.pr-table { width: 100%; border-collapse: collapse; }
+.pr-table th {
+  position: sticky; top: 0; z-index: 2;
+  background: var(--surf2);
+  padding: 9px 10px;
+  text-align: left;
+  font-family: var(--ff-m);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--textd);
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+.pr-table td {
+  padding: 5px 7px;
+  border-bottom: 1px solid rgba(42,74,50,0.4);
+  vertical-align: middle;
+}
+.pr-table tr:last-child td { border-bottom: none; }
+.pr-table tr:hover td { background: rgba(82,169,109,0.04); }
+.pr-num {
+  font-family: var(--ff-m);
+  font-size: 10px;
+  color: var(--textd);
+  text-align: center;
+  width: 36px;
+  padding: 0 4px;
+}
+.pr-sn {
+  font-family: var(--ff-m);
+  font-size: 10px;
+  color: var(--acl);
+  font-style: italic;
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pr-table input[type=text] {
+  min-width: 90px;
+  padding: 5px 7px;
+  font-size: 11px;
+  border-radius: 4px;
+}
+
+/* ── BUTTONS ────────────────────────────── */
+.btn {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 9px 18px;
+  border-radius: var(--r);
+  border: none;
+  font-family: var(--ff-b);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .15s;
+  white-space: nowrap;
+}
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-primary:hover { background: #44916099; filter: brightness(1.1); transform: translateY(-1px); }
+.btn-ghost {
+  background: var(--surf2);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+.btn-ghost:hover { background: var(--surf3); }
+.btn-gold { background: var(--gold); color: #080f0a; }
+.btn-gold:hover { background: var(--goldd); transform: translateY(-1px); }
+.btn-danger {
+  background: transparent;
+  color: var(--danger);
+  border: 1px solid var(--danger);
+  font-size: 12px;
+  padding: 7px 14px;
+}
+.btn-danger:hover { background: rgba(217,91,91,0.1); }
+
+.row-acts {
+  display: flex; align-items: center; gap: 10px;
+  flex-wrap: wrap;
+  margin: 8px 0;
+}
+
+/* ── BADGE ──────────────────────────────── */
+.badge {
+  display: inline-flex; align-items: center;
+  background: rgba(82,169,109,0.12);
+  color: var(--acl);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 3px 10px;
+  font-size: 11px;
+  font-family: var(--ff-m);
+}
+
+/* ── STATUS ─────────────────────────────── */
+.status {
+  padding: 9px 13px;
+  border-radius: var(--r);
+  font-size: 12px;
+  display: none;
+}
+.status.show { display: block; }
+.status.ok  { background: rgba(82,169,109,0.1);  border:1px solid var(--accent); color: var(--acl); }
+.status.err { background: rgba(217,91,91,0.1);   border:1px solid var(--danger); color: #f08080; }
+
+/* ── DIVIDER ────────────────────────────── */
+hr.div { border:none; border-top:1px solid var(--border); margin: 18px 0; }
+
+/* ── TABLE PREVIEW ──────────────────────── */
+#preview-card { display: none; }
+
+.tbl-wrap {
+  overflow: auto;
+  max-height: 480px;
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+}
+.tbl-wrap table {
+  border-collapse: collapse;
+  font-family: var(--ff-m);
+  font-size: 11px;
+  white-space: nowrap;
+}
+.tbl-wrap th {
+  background: var(--surf2);
+  color: var(--acl);
+  padding: 7px 12px;
+  border: 1px solid var(--border);
+  position: sticky; top: 0; z-index: 1;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.tbl-wrap td {
+  padding: 5px 10px;
+  border: 1px solid rgba(42,74,50,0.3);
+  color: var(--text);
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tbl-wrap tr:nth-child(even) td { background: rgba(82,169,109,0.025); }
+.tbl-wrap tr:hover td { background: rgba(82,169,109,0.07); }
+.tbl-wrap td.empty { color: var(--textd); opacity: 0.5; }
+
+/* ── EMPTY STATE ────────────────────────── */
+.empty-state {
+  text-align: center;
+  padding: 32px;
+  color: var(--textd);
+  font-size: 13px;
+}
+
+/* ── SCROLLBAR ──────────────────────────── */
+::-webkit-scrollbar { width:5px; height:5px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius:3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+
+@media(max-width:768px) {
+  header, .wrap { padding-left:18px; padding-right:18px; }
+  header h1 { font-size: 1.7rem; }
+  .fgrid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-tag">Darwin Core Standard</div>
+  <h1>GBIF <em>Occurrence</em> Builder</h1>
+  <p>Construção de tabelas de ocorrência no padrão Darwin Core para publicação no GBIF. Preencha os campos, cole a taxonomia e exporte.</p>
+</header>
+
+<div class="wrap">
+
+<!-- ══════════════════════════════════════════
+     CARD 1 — CAMPOS GLOBAIS
+══════════════════════════════════════════════ -->
+<div class="card" id="c1">
+  <div class="card-hd" onclick="tog('c1')">
+    <div class="step-num">1</div>
+    <div class="card-title">Campos Globais</div>
+    <div class="card-subtitle">Valores que se repetem em todas as linhas</div>
+    <div class="toggle-icon">▾</div>
+  </div>
+  <div class="card-body">
+
+    <!-- Registro -->
+    <div class="fgrid">
+      <div class="fgrid-label">Registro</div>
+      <div class="field">
+        <label class="lbl">basisOfRecord<span class="hint">Ex: HumanObservation</span></label>
+        <input type="text" id="basisOfRecord" placeholder="HumanObservation">
+      </div>
+      <div class="field">
+        <label class="lbl">modified<span class="hint">Data de modificação YYYY-MM-DD</span></label>
+        <input type="text" id="modified" placeholder="2026-01-01">
+      </div>
+      <div class="field fw">
+        <label class="lbl">datasetName<span class="hint">Nome completo do dataset</span></label>
+        <input type="text" id="datasetName" placeholder="RELATÓRIO DE MONITORAMENTO DA AVIFAUNA — ETA Piraí">
+      </div>
+      <div class="field">
+        <label class="lbl">type<span class="hint">Ex: Event</span></label>
+        <input type="text" id="type" placeholder="Event">
+      </div>
+      <div class="field">
+        <label class="lbl">language<span class="hint">Ex: pt</span></label>
+        <input type="text" id="language" placeholder="pt">
+      </div>
+    </div>
+
+    <hr class="div">
+
+    <!-- Instituição -->
+    <div class="fgrid">
+      <div class="fgrid-label">Instituição &amp; Licença</div>
+      <div class="field">
+        <label class="lbl">institutionID<span class="hint">CNPJ ou CPF</span></label>
+        <input type="text" id="institutionID" placeholder="00.000.000/0001-00">
+      </div>
+      <div class="field">
+        <label class="lbl">institutionCode<span class="hint">Nome ou sigla</span></label>
+        <input type="text" id="institutionCode" placeholder="INST">
+      </div>
+      <div class="field">
+        <label class="lbl">license<span class="hint">Ex: CC BY NC</span></label>
+        <input type="text" id="license" placeholder="CC BY NC">
+      </div>
+      <div class="field">
+        <label class="lbl">rightsHolder<span class="hint">Titular dos direitos</span></label>
+        <input type="text" id="rightsHolder" placeholder="Nome da empresa">
+      </div>
+      <div class="field fw">
+        <label class="lbl">dynamicProperties<span class="hint">Propriedades Darwin Core específicas</span></label>
+        <textarea id="dynamicProperties" placeholder="Informações em termo darwin core específico"></textarea>
+      </div>
+    </div>
+
+    <hr class="div">
+
+    <!-- Ocorrência Global -->
+    <div class="fgrid">
+      <div class="fgrid-label">Ocorrência</div>
+      <div class="field fw">
+        <label class="lbl">occurrenceID — prefixo<span class="hint">O número de cada linha será adicionado automaticamente. Ex: BR:EMPRESA:LOCAL:</span></label>
+        <input type="text" id="occurrenceID_prefix" placeholder="BR:EMPRESA:LOCAL:">
+      </div>
+      <div class="field fw">
+        <label class="lbl">recordedBy<span class="hint">Nomes separados por &amp;</span></label>
+        <input type="text" id="recordedBy" placeholder="Nome A &amp; Nome B &amp; Nome C">
+      </div>
+      <div class="field fw">
+        <label class="lbl">associatedMedia<span class="hint">Links separados por |</span></label>
+        <textarea id="associatedMedia" placeholder="https://link1.com | https://link2.com"></textarea>
+      </div>
+    </div>
+
+    <hr class="div">
+
+    <!-- Evento -->
+    <div class="fgrid">
+      <div class="fgrid-label">Evento &amp; Amostragem</div>
+      <div class="field">
+        <label class="lbl">eventDate<span class="hint">YYYY-MM-DD</span></label>
+        <input type="text" id="eventDate" placeholder="2026-01-01">
+      </div>
+      <div class="field">
+        <label class="lbl">habitat<span class="hint">Ex: Mata Atlântica</span></label>
+        <input type="text" id="habitat" placeholder="Mata Atlântica">
+      </div>
+      <div class="field fw">
+        <label class="lbl">samplingProtocol</label>
+        <input type="text" id="samplingProtocol" placeholder="Levantamento ativo em diferentes pontos">
+      </div>
+      <div class="field fw">
+        <label class="lbl">samplingEffort</label>
+        <input type="text" id="samplingEffort" placeholder="40 armadilhas-noite | 10 observadores-hora | 10 km a pé">
+      </div>
+    </div>
+
+    <hr class="div">
+
+    <!-- Localização -->
+    <div class="fgrid">
+      <div class="fgrid-label">Localização Geográfica</div>
+      <div class="field">
+        <label class="lbl">continent</label>
+        <input type="text" id="continent" placeholder="América do Sul">
+      </div>
+      <div class="field">
+        <label class="lbl">country</label>
+        <input type="text" id="country" placeholder="Brasil">
+      </div>
+      <div class="field">
+        <label class="lbl">countryCode<span class="hint">Sigla ISO</span></label>
+        <input type="text" id="countryCode" placeholder="BR">
+      </div>
+      <div class="field">
+        <label class="lbl">stateProvince<span class="hint">Estado / Província</span></label>
+        <input type="text" id="stateProvince" placeholder="Santa Catarina">
+      </div>
+      <div class="field">
+        <label class="lbl">county<span class="hint">Município</span></label>
+        <input type="text" id="county" placeholder="Joinville">
+      </div>
+      <div class="field">
+        <label class="lbl">waterBody<span class="hint">Corpo d'água mais próximo</span></label>
+        <input type="text" id="waterBody" placeholder="Rio Piraí">
+      </div>
+      <div class="field fw">
+        <label class="lbl">locality<span class="hint">Localidade do levantamento</span></label>
+        <textarea id="locality" placeholder="Ao decorrer da trajetória do Rio Piraí nas proximidades da ETA PIRAÍ, bairro Vila Nova"></textarea>
+      </div>
+      <div class="field fw">
+        <label class="lbl">locationRemarks<span class="hint">Endereço completo do local</span></label>
+        <textarea id="locationRemarks" placeholder="Estrada dos Morros, s/n – Zona Rural, Bairro Vila Nova, Joinville – SC."></textarea>
+      </div>
+    </div>
+
+    <hr class="div">
+
+    <!-- Coordenadas -->
+    <div class="fgrid">
+      <div class="fgrid-label">Coordenadas</div>
+      <div class="field">
+        <label class="lbl">decimalLatitude<span class="hint">Padrão Google Maps</span></label>
+        <input type="text" id="decimalLatitude" placeholder="-26.247400" oninput="calcUTM()">
+      </div>
+      <div class="field">
+        <label class="lbl">decimalLongitude<span class="hint">Padrão Google Maps</span></label>
+        <input type="text" id="decimalLongitude" placeholder="-48.982000" oninput="calcUTM()">
+      </div>
+      <div class="field">
+        <label class="lbl">verbatimLatitude<span class="hint">Calculado automaticamente (UTM Northing)</span></label>
+        <div class="utm-box" id="utm_lat">—</div>
+      </div>
+      <div class="field">
+        <label class="lbl">verbatimLongitude<span class="hint">Calculado automaticamente (UTM Easting)</span></label>
+        <div class="utm-box" id="utm_lon">—</div>
+      </div>
+      <div class="field">
+        <label class="lbl">geodeticDatum</label>
+        <input type="text" id="geodeticDatum" placeholder="SIRGAS 2000">
+      </div>
+      <div class="field">
+        <label class="lbl">georeferenceProtocol</label>
+        <input type="text" id="georeferenceProtocol" placeholder="GPS de campo">
+      </div>
+    </div>
+
+    <hr class="div">
+
+    <!-- Identificação -->
+    <div class="fgrid">
+      <div class="fgrid-label">Identificação</div>
+      <div class="field fw">
+        <label class="lbl">identifiedBy<span class="hint">Nomes separados por &amp;</span></label>
+        <input type="text" id="identifiedBy" placeholder="Nome A &amp; Nome B">
+      </div>
+      <div class="field">
+        <label class="lbl">dateIdentified<span class="hint">YYYY-MM-DD</span></label>
+        <input type="text" id="dateIdentified" placeholder="2026-01-01">
+      </div>
+      <div class="field fw">
+        <label class="lbl">identificationRemarks</label>
+        <textarea id="identificationRemarks" placeholder="Espécie X diferenciada de espécie Y pelo comprimento das unhas"></textarea>
+      </div>
+    </div>
+
+  </div><!-- /card-body -->
+</div><!-- /card -->
+
+<!-- ══════════════════════════════════════════
+     CARD 2 — TAXONOMIA
+══════════════════════════════════════════════ -->
+<div class="card" id="c2">
+  <div class="card-hd" onclick="tog('c2')">
+    <div class="step-num">2</div>
+    <div class="card-title">Taxonomia</div>
+    <div class="card-subtitle">Cole a tabela com dados taxonômicos (sem cabeçalho)</div>
+    <div class="toggle-icon">▾</div>
+  </div>
+  <div class="card-body">
+
+    <div class="tax-hint">
+      <strong>⚠ Ordem obrigatória das colunas (separadas por TAB, sem cabeçalho):</strong>
+      <div class="col-order">
+        kingdom &nbsp;·&nbsp; phylum &nbsp;·&nbsp; class &nbsp;·&nbsp; order &nbsp;·&nbsp; family &nbsp;·&nbsp; genus &nbsp;·&nbsp;
+        specificEpithet &nbsp;·&nbsp; infraspecificEpithet &nbsp;·&nbsp; identificationQualifier &nbsp;·&nbsp;
+        scientificName &nbsp;·&nbsp; vernacularName &nbsp;·&nbsp; taxonRank &nbsp;·&nbsp; taxonRemarks
+      </div>
+      <div style="margin-top:6px; font-size:11px; opacity:0.8;">
+        Cada linha = 1 registro. O número de linhas define o total de ocorrências na tabela final.
+      </div>
+    </div>
+
+    <div class="field" style="margin-bottom:14px;">
+      <label class="lbl">Cole a tabela aqui</label>
+      <textarea id="taxPaste" style="min-height:160px; font-size:11px;" placeholder="Animalia	Chordata	Aves	Tinamiformes	Tinamidae	Tinamus	solitarius		X X	Tinamus solitarius	macuco	espécie	"></textarea>
+    </div>
+
+    <div class="row-acts">
+      <button class="btn btn-ghost" onclick="parseTax()">🔍 Processar Taxonomia</button>
+      <span id="tax-badge" class="badge" style="display:none">0 linhas</span>
+    </div>
+    <div class="status" id="tax-status"></div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     CARD 3 — CAMPOS POR LINHA
+══════════════════════════════════════════════ -->
+<div class="card" id="c3">
+  <div class="card-hd" onclick="tog('c3')">
+    <div class="step-num">3</div>
+    <div class="card-title">Campos por Linha</div>
+    <div class="card-subtitle">individualCount · sex · establishmentMeans · occurrenceRemarks</div>
+    <div class="toggle-icon">▾</div>
+  </div>
+  <div class="card-body">
+    <p style="color:var(--textd); font-size:12px; margin-bottom:14px;">
+      Preencha apenas a 1ª linha para repetir o mesmo valor em todos os registros.<br>
+      <strong style="color:var(--text)">individualCount</strong> padrão = <strong style="color:var(--acl)">1</strong> quando vazio.
+    </p>
+    <div id="pr-container">
+      <div class="empty-state">↑ Processe a taxonomia (Seção 2) para ativar esta seção.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     AÇÕES PRINCIPAIS
+══════════════════════════════════════════════ -->
+<div class="row-acts" style="margin:18px 0 4px;">
+  <button class="btn btn-primary" onclick="genTable()">⚡ Gerar Tabela</button>
+  <button class="btn btn-danger" onclick="clearAll()">🗑 Limpar Tudo</button>
+  <div class="status" id="gen-status" style="display:inline-flex; align-items:center;"></div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     CARD 4 — PRÉ-VISUALIZAÇÃO
+══════════════════════════════════════════════ -->
+<div class="card" id="preview-card">
+  <div class="card-hd" onclick="tog('preview-card')">
+    <div class="step-num">4</div>
+    <div class="card-title">Pré-visualização</div>
+    <div class="card-subtitle" id="preview-info">—</div>
+    <div class="toggle-icon">▾</div>
+  </div>
+  <div class="card-body">
+    <div class="row-acts" style="margin-bottom:14px;">
+      <button class="btn btn-gold" onclick="doExport('tsv')">⬇ Exportar TSV (GBIF)</button>
+      <button class="btn btn-ghost" onclick="doExport('csv')">⬇ Exportar CSV</button>
+    </div>
+    <div class="tbl-wrap" id="tbl-wrap"></div>
+  </div>
+</div>
+
+</div><!-- /wrap -->
+
+<script>
+// ══════════════════════════════════════════
+// CONSTANTS
+// ══════════════════════════════════════════
+const COLS = [
+  'basisOfRecord','modified','datasetName','type','language',
+  'institutionID','institutionCode','license','rightsHolder','dynamicProperties',
+  'occurrenceID','recordedBy','recordNumber','associatedMedia',
+  'individualCount','sex','establishmentMeans','occurrenceRemarks',
+  'eventDate','habitat','samplingProtocol','samplingEffort',
+  'continent','country','countryCode','stateProvince','county','waterBody',
+  'locality','locationRemarks',
+  'verbatimLatitude','verbatimLongitude','decimalLatitude','decimalLongitude',
+  'geodeticDatum','georeferenceProtocol',
+  'kingdom','phylum','class','order','family','genus',
+  'specificEpithet','infraspecificEpithet','identificationQualifier',
+  'scientificName','vernacularName','taxonRank','taxonRemarks',
+  'identifiedBy','dateIdentified','identificationRemarks'
+];
+
+const TAX_COLS = [
+  'kingdom','phylum','class','order','family','genus',
+  'specificEpithet','infraspecificEpithet','identificationQualifier',
+  'scientificName','vernacularName','taxonRank','taxonRemarks'
+];
+
+const PER_ROW_COLS = ['individualCount','sex','establishmentMeans','occurrenceRemarks'];
+
+const GLOBAL_IDS = [
+  'basisOfRecord','modified','datasetName','type','language',
+  'institutionID','institutionCode','license','rightsHolder','dynamicProperties',
+  'recordedBy','associatedMedia',
+  'eventDate','habitat','samplingProtocol','samplingEffort',
+  'continent','country','countryCode','stateProvince','county','waterBody',
+  'locality','locationRemarks',
+  'decimalLatitude','decimalLongitude',
+  'geodeticDatum','georeferenceProtocol',
+  'identifiedBy','dateIdentified','identificationRemarks'
+];
+
+let taxRows   = [];
+let tableData = [];
+let utmCache  = { lat:'', lon:'' };
+
+// ══════════════════════════════════════════
+// UI HELPERS
+// ══════════════════════════════════════════
+function tog(id) {
+  document.getElementById(id).classList.toggle('closed');
+}
+
+function gv(id) {
+  const el = document.getElementById(id);
+  return el ? el.value.trim() : '';
+}
+
+function showSt(id, msg, type) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = msg;
+  el.className = 'status ' + type + ' show';
+  el.style.display = 'block';
+  if (type === 'ok') setTimeout(() => { el.className='status'; el.style.display='none'; }, 5000);
+}
+
+function esc(s) {
+  return String(s||'')
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;');
+}
+
+// ══════════════════════════════════════════
+// UTM CONVERSION (WGS84 → UTM)
+// ══════════════════════════════════════════
+function toUTM(lat, lon) {
+  const a  = 6378137.0;
+  const f  = 1/298.257223563;
+  const b  = a*(1-f);
+  const e2 = 1 - (b*b)/(a*a);
+  const ep2= e2/(1-e2);
+  const k0 = 0.9996;
+
+  const zone  = Math.floor((lon+180)/6)+1;
+  const lon0  = ((zone-1)*6 - 180 + 3) * Math.PI/180;
+
+  const φ  = lat * Math.PI/180;
+  const λ  = lon * Math.PI/180;
+
+  const N = a / Math.sqrt(1 - e2*Math.sin(φ)**2);
+  const T = Math.tan(φ)**2;
+  const C = ep2 * Math.cos(φ)**2;
+  const A = Math.cos(φ) * (λ - lon0);
+
+  const M = a*(
+    (1 - e2/4 - 3*e2**2/64 - 5*e2**3/256)*φ
+    - (3*e2/8 + 3*e2**2/32 + 45*e2**3/1024)*Math.sin(2*φ)
+    + (15*e2**2/256 + 45*e2**3/1024)*Math.sin(4*φ)
+    - (35*e2**3/3072)*Math.sin(6*φ)
+  );
+
+  const E = Math.round(
+    k0*N*(
+      A + (1-T+C)*A**3/6
+      + (5-18*T+T**2+72*C-58*ep2)*A**5/120
+    ) + 500000
+  );
+
+  let Nv = k0*(
+    M + N*Math.tan(φ)*(
+      A**2/2
+      + (5-T+9*C+4*C**2)*A**4/24
+      + (61-58*T+T**2+600*C-330*ep2)*A**6/720
+    )
+  );
+  if (lat < 0) Nv += 10000000;
+  Nv = Math.round(Nv);
+
+  return { E, N: Nv, zone };
+}
+
+function calcUTM() {
+  const lat = parseFloat(gv('decimalLatitude'));
+  const lon = parseFloat(gv('decimalLongitude'));
+  const elLat = document.getElementById('utm_lat');
+  const elLon = document.getElementById('utm_lon');
+  if (!isNaN(lat) && !isNaN(lon)) {
+    const u = toUTM(lat, lon);
+    utmCache = { lat: `${u.N} N`, lon: `${u.E} E` };
+    elLat.textContent = utmCache.lat;
+    elLon.textContent = utmCache.lon;
+  } else {
+    utmCache = { lat:'', lon:'' };
+    elLat.textContent = '—';
+    elLon.textContent = '—';
+  }
+}
+
+// ══════════════════════════════════════════
+// TAXONOMY PARSE
+// ══════════════════════════════════════════
+function parseTax() {
+  const raw = document.getElementById('taxPaste').value.trim();
+  if (!raw) { showSt('tax-status','Cole os dados de taxonomia antes de processar.','err'); return; }
+
+  const lines = raw.split('\n').filter(l => l.trim() !== '');
+  taxRows = lines.map(line => {
+    const c = line.split('\t');
+    const o = {};
+    TAX_COLS.forEach((col,i) => o[col] = (c[i]||'').trim());
+    return o;
+  });
+
+  renderPerRow();
+
+  const badge = document.getElementById('tax-badge');
+  badge.style.display = 'inline-flex';
+  badge.textContent = `${taxRows.length} linha${taxRows.length!==1?'s':''} carregada${taxRows.length!==1?'s':''}`;
+
+  showSt('tax-status', `✓ ${taxRows.length} registro(s) taxonômico(s) processado(s).`, 'ok');
+}
+
+// ══════════════════════════════════════════
+// PER-ROW INPUTS RENDER
+// ══════════════════════════════════════════
+function renderPerRow() {
+  const c = document.getElementById('pr-container');
+  if (taxRows.length === 0) {
+    c.innerHTML = '<div class="empty-state">↑ Processe a taxonomia primeiro.</div>';
+    return;
+  }
+
+  let h = `<div class="pr-wrap"><table class="pr-table"><thead><tr>
+    <th>#</th>
+    <th>scientificName</th>
+    <th>individualCount</th>
+    <th>sex</th>
+    <th>establishmentMeans</th>
+    <th>occurrenceRemarks</th>
+  </tr></thead><tbody>`;
+
+  taxRows.forEach((row,i) => {
+    h += `<tr>
+      <td class="pr-num">${i+1}</td>
+      <td class="pr-sn">${esc(row.scientificName||'—')}</td>
+      <td><input type="text" id="pr_individualCount_${i}" placeholder="1"></td>
+      <td><input type="text" id="pr_sex_${i}" placeholder=""></td>
+      <td><input type="text" id="pr_establishmentMeans_${i}" placeholder="nativa"></td>
+      <td><input type="text" id="pr_occurrenceRemarks_${i}" placeholder="Avistado"></td>
+    </tr>`;
+  });
+
+  h += '</tbody></table></div>';
+  c.innerHTML = h;
+}
+
+function getPR(field, i) {
+  const el = document.getElementById(`pr_${field}_${i}`);
+  return el ? el.value.trim() : '';
+}
+
+// ══════════════════════════════════════════
+// GENERATE TABLE
+// ══════════════════════════════════════════
+function genTable() {
+  if (taxRows.length === 0) {
+    showSt('gen-status','⚠ Processe a taxonomia primeiro (Seção 2).','err');
+    return;
+  }
+
+  // Global values map
+  const g = {};
+  GLOBAL_IDS.forEach(id => g[id] = gv(id));
+
+  const prefix = gv('occurrenceID_prefix');
+
+  // Compute UTM from current inputs
+  const decLat = parseFloat(g.decimalLatitude);
+  const decLon = parseFloat(g.decimalLongitude);
+  let vLat='', vLon='';
+  if (!isNaN(decLat) && !isNaN(decLon)) {
+    const u = toUTM(decLat, decLon);
+    vLat = `${u.N} N`;
+    vLon = `${u.E} E`;
+  }
+
+  // Per-row: propagate first if others empty
+  const prData = {};
+  PER_ROW_COLS.forEach(field => {
+    const vals = taxRows.map((_,i) => getPR(field,i));
+    const onlyFirst = vals[0] !== '' && vals.slice(1).every(v => v === '');
+    prData[field] = onlyFirst ? taxRows.map(() => vals[0]) : vals;
+  });
+
+  tableData = taxRows.map((tax, i) => {
+    const n = i+1;
+    const row = {};
+
+    // Global
+    GLOBAL_IDS.forEach(id => { if (id !== 'decimalLatitude' && id !== 'decimalLongitude') row[id] = g[id]; else row[id] = g[id]; });
+
+    // Auto
+    row.occurrenceID   = prefix ? `${prefix}${n}` : String(n);
+    row.recordNumber   = String(n);
+    row.verbatimLatitude  = vLat;
+    row.verbatimLongitude = vLon;
+    row.decimalLatitude   = g.decimalLatitude;
+    row.decimalLongitude  = g.decimalLongitude;
+
+    // Taxonomy
+    TAX_COLS.forEach(col => row[col] = tax[col]||'');
+
+    // Per-row
+    PER_ROW_COLS.forEach(field => {
+      let v = prData[field][i]||'';
+      if (field === 'individualCount' && v === '') v = '1';
+      row[field] = v;
+    });
+
+    return row;
+  });
+
+  renderPreview();
+  showSt('gen-status', `✓ Tabela gerada: ${tableData.length} registro(s) × ${COLS.length} colunas.`, 'ok');
+}
+
+// ══════════════════════════════════════════
+// PREVIEW RENDER
+// ══════════════════════════════════════════
+function renderPreview() {
+  const wrap = document.getElementById('tbl-wrap');
+
+  let h = '<table><thead><tr>';
+  COLS.forEach(c => h += `<th>${esc(c)}</th>`);
+  h += '</tr></thead><tbody>';
+
+  tableData.forEach(row => {
+    h += '<tr>';
+    COLS.forEach(c => {
+      const v = row[c]||'';
+      const display = v.length > 28 ? v.substring(0,28)+'…' : v;
+      h += `<td class="${v?'':'empty'}" title="${esc(v)}">${esc(display)||'&nbsp;'}</td>`;
+    });
+    h += '</tr>';
+  });
+
+  h += '</tbody></table>';
+  wrap.innerHTML = h;
+
+  const card = document.getElementById('preview-card');
+  card.style.display = 'block';
+  document.getElementById('preview-info').textContent =
+    `${tableData.length} registros · ${COLS.length} colunas`;
+  card.scrollIntoView({ behavior:'smooth', block:'start' });
+}
+
+// ══════════════════════════════════════════
+// EXPORT
+// ══════════════════════════════════════════
+function doExport(fmt) {
+  if (tableData.length === 0) { alert('Gere a tabela primeiro.'); return; }
+
+  let content, fname, mime;
+
+  if (fmt === 'tsv') {
+    const lines = [COLS.join('\t')];
+    tableData.forEach(row => {
+      lines.push(COLS.map(c => (row[c]||'').replace(/\t/g,' ')).join('\t'));
+    });
+    content = lines.join('\r\n');
+    fname = 'gbif_occurrence.txt';
+    mime = 'text/tab-separated-values';
+  } else {
+    const lines = [COLS.map(c => `"${c}"`).join(',')];
+    tableData.forEach(row => {
+      lines.push(COLS.map(c => {
+        const v = (row[c]||'').replace(/"/g,'""');
+        return `"${v}"`;
+      }).join(','));
+    });
+    content = lines.join('\r\n');
+    fname = 'gbif_occurrence.csv';
+    mime = 'text/csv';
+  }
+
+  const blob = new Blob(['\uFEFF'+content], { type: mime+';charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = fname;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(a.href);
+}
+
+// ══════════════════════════════════════════
+// CLEAR ALL
+// ══════════════════════════════════════════
+function clearAll() {
+  if (!confirm('Limpar todos os dados? Esta ação não pode ser desfeita.')) return;
+  document.querySelectorAll('input[type=text], textarea').forEach(el => el.value='');
+  taxRows = []; tableData = [];
+  document.getElementById('utm_lat').textContent='—';
+  document.getElementById('utm_lon').textContent='—';
+  document.getElementById('tax-badge').style.display='none';
+  document.getElementById('pr-container').innerHTML='<div class="empty-state">↑ Processe a taxonomia primeiro para ativar esta seção.</div>';
+  document.getElementById('preview-card').style.display='none';
+  document.getElementById('tbl-wrap').innerHTML='';
+  ['tax-status','gen-status'].forEach(id => {
+    const el=document.getElementById(id); if(el){el.className='status';el.style.display='none';}
+  });
+}
+</script>
+</body>
+</html>
